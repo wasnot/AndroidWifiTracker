@@ -1,5 +1,7 @@
 package net.wasnot.wifitracker;
 
+import java.util.ArrayList;
+
 import android.app.Activity;
 import android.app.ListActivity;
 import android.bluetooth.BluetoothAdapter;
@@ -17,8 +19,6 @@ import android.widget.BaseAdapter;
 import android.widget.ListView;
 import android.widget.TextView;
 import android.widget.Toast;
-
-import java.util.ArrayList;
 
 public class BleActivity extends ListActivity {
 
@@ -233,15 +233,27 @@ public class BleActivity extends ListActivity {
             BleDevice item = mLeDevices.get(i);
             BluetoothDevice device = item.device;
             final String deviceName = device.getName();
+            String presetName = getPresetName(device.getAddress());
             if (deviceName != null && deviceName.length() > 0) {
-                viewHolder.deviceName.setText(deviceName);
+                viewHolder.deviceName.setText(presetName + deviceName);
             } else {
-                viewHolder.deviceName.setText(R.string.unknown_device);
+                viewHolder.deviceName.setText(presetName + getText(R.string.unknown_device));
             }
             viewHolder.deviceAddress.setText(device.getAddress()
                     + " - " + item.rssi + " - " + new String(item.scanRecord));
 
             return view;
+        }
+
+        private String getPresetName(String address) {
+            if ("D0:99:4C:E9:18:AB".equals(address)) {
+                return "[white]";
+            } else if ("E1:8E:5C:BF:9D:41".equals(address)) {
+                return "[blue]";
+            } else if ("E2:24:B5:E6:79:41".equals(address)) {
+                return "[drippy0]";
+            }
+            return "";
         }
     }
 
