@@ -1,7 +1,5 @@
 package net.wasnot.wifitracker;
 
-import java.util.ArrayList;
-
 import android.app.Activity;
 import android.app.ListActivity;
 import android.bluetooth.BluetoothAdapter;
@@ -19,6 +17,8 @@ import android.widget.BaseAdapter;
 import android.widget.ListView;
 import android.widget.TextView;
 import android.widget.Toast;
+
+import java.util.ArrayList;
 
 public class BleActivity extends ListActivity {
 
@@ -239,7 +239,7 @@ public class BleActivity extends ListActivity {
                 viewHolder.deviceName.setText(R.string.unknown_device);
             }
             viewHolder.deviceAddress.setText(device.getAddress()
-                    + " - " + item.rssi + " - " + item.scanRecord);
+                    + " - " + item.rssi + " - " + new String(item.scanRecord));
 
             return view;
         }
