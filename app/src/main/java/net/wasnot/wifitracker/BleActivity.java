@@ -1,7 +1,5 @@
 package net.wasnot.wifitracker;
 
-import java.util.ArrayList;
-
 import android.app.Activity;
 import android.app.ListActivity;
 import android.bluetooth.BluetoothAdapter;
@@ -19,6 +17,13 @@ import android.widget.BaseAdapter;
 import android.widget.ListView;
 import android.widget.TextView;
 import android.widget.Toast;
+
+import java.nio.ByteBuffer;
+import java.nio.ByteOrder;
+import java.util.ArrayList;
+import java.util.Arrays;
+import java.util.List;
+import java.util.UUID;
 
 public class BleActivity extends ListActivity {
 
@@ -155,6 +160,7 @@ public class BleActivity extends ListActivity {
 
             mScanning = true;
             mBluetoothAdapter.startLeScan(mLeScanCallback);
+//            mBluetoothAdapter.startLeScan(new UUID[]{uuid}, mLeScanCallback);
         } else {
             mScanning = false;
             mBluetoothAdapter.stopLeScan(mLeScanCallback);
@@ -240,7 +246,11 @@ public class BleActivity extends ListActivity {
                 viewHolder.deviceName.setText(presetName + getText(R.string.unknown_device));
             }
             viewHolder.deviceAddress.setText(device.getAddress()
-                    + " - " + item.rssi + " - " + new String(item.scanRecord));
+                    + " - " + item.rssi + " - " + new String(item.scanRecord)
+                    + "\nuuids:" + device.getUuids() + " " + Arrays.toString(device.getUuids())
+                    + "\nfetch:" + device.fetchUuidsWithSdp()
+                    + "\nuuidlist:" + parseUuids(item.scanRecord)
+                    + "\n" + device.toString());
 
             return view;
         }
@@ -292,4 +302,46 @@ public class BleActivity extends ListActivity {
             scanRecord = s;
         }
     }
+
+    private List<UUID> parseUuids(byte[] advertisedData) {
+        List<UUID> uuids = new ArrayList<UUID>();
+
+        ByteBuffer buffer = ByteBuffer.wrap(advertisedData).order(ByteOrder.LITTLE_ENDIAN);
+        while (buffer.remaining() > 2) {
+            byte length = buffer.get();
+            if (length == 0) {
+                break;
+            }
+
+            byte type = buffer.get();
+            switch (type) {
+                case 0x02: // Partial list of 16-bit UUIDs
+                case 0x03: // Complete list of 16-bit UUIDs
+                    while (length >= 2) {
+                        uuids.add(UUID.fromString(String.format(
+                                "%08x-0000-1000-8000-00805f9b34fb", buffer.getShort())));
+                        length -= 2;
+                    }
+                    break;
+
+                case 0x06: // Partial list of 128-bit UUIDs
+                case 0x07: // Complete list of 128-bit UUIDs
+                    while (length >= 16) {
+                        long lsb = buffer.getLong();
+                        long msb = buffer.getLong();
+                        uuids.add(new UUID(msb, lsb));
+                        length -= 16;
+                    }
+                    break;
+
+                default:
+                    buffer.position(buffer.position() + length - 1);
+                    break;
+            }
+        }
+
+        return uuids;
+    }
+
+    private final static UUID uuid = UUID.fromString("f7c9ba7e-6658-4390-b53-1de5e1453654");
 }
